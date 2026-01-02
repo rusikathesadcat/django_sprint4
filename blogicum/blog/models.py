@@ -4,20 +4,7 @@ from django.db import models
 User = get_user_model()
 
 
-class Category(models.Model):
-    title = models.CharField(
-        max_length=256,
-        verbose_name='Заголовок'
-    )
-    description = models.TextField(verbose_name='Описание')
-    slug = models.SlugField(
-        unique=True,
-        verbose_name='Идентификатор',
-        help_text=(
-            'Идентификатор страницы для URL; разрешены символы латиницы, '
-            'цифры, дефис и подчёркивание.'
-        )
-    )
+class TimeStampedModel(models.Model):
     is_published = models.BooleanField(
         default=True,
         verbose_name='Опубликовано',
@@ -26,55 +13,53 @@ class Category(models.Model):
     created_at = models.DateTimeField(
         auto_now_add=True,
         verbose_name='Добавлено'
+    )
+
+    class Meta:
+        abstract = True
+
+
+class Category(TimeStampedModel):
+    title = models.CharField(max_length=256, verbose_name='Заголовок')
+    description = models.TextField(verbose_name='Описание')
+    slug = models.SlugField(
+        unique=True,
+        verbose_name='Идентификатор',
+        help_text='Идентификатор страницы для URL; разрешены символы латиницы, цифры, дефис и подчёркивание.'
     )
 
     class Meta:
         verbose_name = 'категория'
         verbose_name_plural = 'Категории'
+        ordering = ('title',)
 
     def __str__(self):
         return self.title
 
 
-class Location(models.Model):
-    name = models.CharField(
-        max_length=256,
-        verbose_name='Название места'
-    )
-    is_published = models.BooleanField(
-        default=True,
-        verbose_name='Опубликовано',
-        help_text='Снимите галочку, чтобы скрыть публикацию.'
-    )
-    created_at = models.DateTimeField(
-        auto_now_add=True,
-        verbose_name='Добавлено'
-    )
+class Location(TimeStampedModel):
+    name = models.CharField(max_length=256, verbose_name='Название места')
 
     class Meta:
         verbose_name = 'местоположение'
         verbose_name_plural = 'Местоположения'
+        ordering = ('name',)
 
     def __str__(self):
         return self.name
 
 
-class Post(models.Model):
-    title = models.CharField(
-        max_length=256,
-        verbose_name='Заголовок'
-    )
+class Post(TimeStampedModel):
+    title = models.CharField(max_length=256, verbose_name='Заголовок')
     text = models.TextField(verbose_name='Текст')
     pub_date = models.DateTimeField(
         verbose_name='Дата и время публикации',
-        help_text=(
-            'Если установить дату и время в будущем — можно делать '
-            'отложенные публикации.'
-        )
+        help_text='Если установить дату и время в будущем — можно делать отложенные публикации.'
     )
     author = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
+        related_name='posts',
         verbose_name='Автор публикации'
     )
     location = models.ForeignKey(
@@ -82,6 +67,7 @@ class Post(models.Model):
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
+        related_name='posts',
         verbose_name='Местоположение'
     )
     category = models.ForeignKey(
@@ -89,22 +75,10 @@ class Post(models.Model):
         on_delete=models.SET_NULL,
         null=True,
         blank=False,
+        related_name='posts',
         verbose_name='Категория'
     )
-    is_published = models.BooleanField(
-        default=True,
-        verbose_name='Опубликовано',
-        help_text='Снимите галочку, чтобы скрыть публикацию.'
-    )
-    created_at = models.DateTimeField(
-        auto_now_add=True,
-        verbose_name='Добавлено'
-    )
-    image = models.ImageField(
-        upload_to='posts',
-        blank=True,
-        verbose_name='Фото'
-    )
+    image = models.ImageField(upload_to='posts', blank=True, verbose_name='Фото')
 
     class Meta:
         verbose_name = 'публикация'
@@ -115,7 +89,7 @@ class Post(models.Model):
         return self.title
 
 
-class Comment(models.Model):
+class Comment(TimeStampedModel):
     text = models.TextField(verbose_name='Текст комментария')
     post = models.ForeignKey(
         Post,
@@ -126,11 +100,8 @@ class Comment(models.Model):
     author = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
+        related_name='comments',
         verbose_name='Автор комментария'
-    )
-    created_at = models.DateTimeField(
-        auto_now_add=True,
-        verbose_name='Добавлено'
     )
 
     class Meta:
